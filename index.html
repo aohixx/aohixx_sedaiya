@@ -67,7 +67,17 @@ dialog::backdrop{background:rgba(5,20,17,.55)}
 dialog form{padding:20px;display:grid;gap:12px}
 dialog h2{margin:0;font-size:22px}
 label{display:grid;gap:4px;font-size:14px;font-weight:700}
-.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hint{margin:0;font-size:14px;color:var(--sub)}.hint:empty{display:none}.hint b{color:var(--acc)}
+.rep{display:inline-block;font-size:12px;font-weight:700;border:1.5px solid var(--acc);color:var(--acc);border-radius:99px;padding:0 8px;margin-left:6px;vertical-align:2px}
+.rep.first{border-color:var(--line);color:var(--sub)}
+.regs{margin-top:28px;background:var(--panel);border-radius:16px;padding:16px clamp(12px,2vw,20px)}
+.regs h2{margin:0 0 4px;font-size:20px}.regs h2 span{font-size:14px;color:var(--sub);font-family:"Noto Sans JP"}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--sub);font-weight:700}
+.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.big{font:900 20px/1 "Zen Maru Gothic",sans-serif;color:var(--acc)}
+@media(max-width:600px){table{font-size:14px}th:nth-child(4),td:nth-child(4),th:nth-child(5),td:nth-child(5){display:none}}
 .dact{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .hide{display:none!important}
 @media(max-width:900px){.board{grid-template-columns:minmax(0,1fr)}}
@@ -76,12 +86,12 @@ label{display:grid;gap:4px;font-size:14px;font-weight:700}
 </head>
 <body>
 <header class="top"><div class="in">
-  <div><h1>世代屋さん 受注ボード</h1><p>受付順に上から作業します。自分の名前で検索すると順番が分かります。</p></div>
+  <div><h1>世代屋さん 受注ボード</h1><p>受付順に上から作業します。自分の名前で検索すると、順番と依頼回数が分かります。</p></div>
   <div class="right"><div class="stats"><div><b id="sW">–</b>受付待ち</div><div><b id="sK">–</b>作業中</div><div><b id="sD">–</b>納品済み</div></div><div class="auth"><span id="who"></span><button id="loginBtn" class="ghost">店主ログイン</button><button id="logoutBtn" class="ghost hide">ログアウト</button></div></div>
 </div></header>
 <main>
   <div class="bar">
-    <input id="q" type="search" placeholder="依頼者名・ホムンクルス名で検索" aria-label="検索">
+    <input id="q" type="search" placeholder="依頼者名で検索" aria-label="検索">
     <button id="addBtn" class="pri hide">＋ 依頼を受け付ける</button>
   </div>
   <p class="status" id="msg"></p>
@@ -91,17 +101,19 @@ label{display:grid;gap:4px;font-size:14px;font-weight:700}
     <section class="col work"><h2>作業中 <span id="cK"></span></h2><div id="lK"></div></section>
     <section class="col done"><h2>納品済み <span id="cD"></span></h2><div id="lD"></div><button class="more hide" id="moreD">もっと見る</button></section>
   </div>
+  <section class="regs">
+    <h2>依頼してくれた人 <span id="cR"></span></h2>
+    <p class="note">同じ名前での依頼回数です。名前の表記をそろえると正しく数えられます。</p>
+    <table><thead><tr><th>依頼者</th><th class="n">依頼回数</th><th class="n">納品済み</th><th class="n">合計世代</th><th>最後の依頼</th></tr></thead><tbody id="lR"></tbody></table>
+    <button class="more hide" id="moreR">もっと見る</button>
+  </section>
 </main>
 
 <dialog id="dlg"><form id="f" method="dialog">
   <h2 id="fTitle">依頼を受け付ける</h2>
-  <label>依頼者名<input id="fClient" required maxlength="40" autocomplete="off"></label>
-  <label>対象ホムンクルス<input id="fHomu" maxlength="60" autocomplete="off" placeholder="例：エンバーハスク（つんつん）"></label>
-  <div class="row">
-    <label>開始世代<input id="fFrom" type="number" min="0" max="9999" inputmode="numeric"></label>
-    <label>目標世代<input id="fTo" type="number" min="0" max="9999" inputmode="numeric"></label>
-    <label>現在世代<input id="fCur" type="number" min="0" max="9999" inputmode="numeric"></label>
-  </div>
+  <label>依頼者名<input id="fClient" required maxlength="40" autocomplete="off" list="clientList" placeholder="ゲーム内の名前"><datalist id="clientList"></datalist></label>
+  <p class="hint" id="fRepeat"></p>
+  <label>何世代ほしいか<input id="fGens" type="number" min="1" max="9999" inputmode="numeric" placeholder="例：5"></label>
   <label>メモ（報酬・素材・連絡など）<textarea id="fNote" rows="3" maxlength="400"></textarea></label>
   <div class="dact"><button type="button" id="fCancel">やめる</button><button class="pri" id="fSave" type="submit">保存</button></div>
 </form></dialog>
@@ -122,7 +134,7 @@ const firebaseConfig = {
   messagingSenderId: "542610511127",
   appId: "1:542610511127:web:5accc621ddf9ce004b5352"
 };
-// 店主（編集できる人）のGoogleアカウントのメールアドレス。firestore.rules と同じものを書く
+// 店主のUID（Authentication → ユーザー タブ）。必ず " " で囲む。firestore.rules と同じものを書く
 const OWNER_UIDS = ["ECrbmFsNhwXAvP2uQurmpOtJJlj1"];
 // =====================================
 
@@ -131,7 +143,7 @@ import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
 
 const $=id=>document.getElementById(id);
-let orders=[],q='',doneShown=20,editId=null,loaded=false,canWrite=false;
+let orders=[],q='',doneShown=20,regShown=20,nth=new Map(),editId=null,loaded=false,canWrite=false;
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const d2=t=>{if(!t)return'';const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
@@ -143,22 +155,17 @@ const fs=getFirestore(app);
 const auth=getAuth(app);
 const col=collection(fs,'orders');
 
-function genText(o){
+const norm=n=>String(n||'').normalize('NFKC').trim().toLowerCase();
+function gensOf(o){ // 旧データ（開始→目標）にも対応
+  const g=num(o.gens);if(g!=null)return g;
   const f=num(o.fromGen),t=num(o.toGen);
-  if(f!=null&&t!=null)return `${f}世代 → ${t}世代`;
-  if(t!=null)return `目標 ${t}世代`;
-  return '';
+  return f!=null&&t!=null&&t>f?t-f:null;
 }
-function pct(o){
-  const f=num(o.fromGen),t=num(o.toGen),c=num(o.curGen);
-  if(f==null||t==null||c==null||t<=f)return null;
-  return Math.max(0,Math.min(100,Math.round((c-f)/(t-f)*100)));
-}
-const match=o=>((o.client||'')+' '+(o.homu||'')).toLowerCase().includes(q);
+const match=o=>norm(o.client).includes(q);
 
 function card(o,i,list){
   const hit=q&&match(o);
-  const p=pct(o),g=genText(o);
+  const g=gensOf(o),n=nth.get(o.id)||1;
   const isNext=list==='wait'&&i===0;
   let acts='';
   if(canWrite){
@@ -172,17 +179,40 @@ function card(o,i,list){
   if(o.doneAt)meta.push(`納品 ${d2(o.doneAt)}`);
   return `<article class="card${isNext?' next':''}"${hit?' style="outline:2.5px solid var(--jade)"':''}>
     <div class="num">${list==='wait'?i+1:list==='work'?'⚗':'✓'}</div>
-    <div class="who">${esc(o.client)}${isNext?'<span class="tag">次はこの人</span>':''}</div>
-    <div class="what">${esc(o.homu||'（ホムンクルス未記入）')}</div>
-    <div class="gen">${esc(g)}${p!=null&&o.status==='work'?` <span class="what">現在 ${esc(num(o.curGen))}世代・${p}%</span>`:''}</div>
-    ${p!=null&&o.status==='work'?`<div class="meter"><i style="width:${p}%"></i></div>`:''}
+    <div class="who">${esc(o.client)}<span class="rep${n===1?' first':''}">${n===1?'初回':n+'回目'}</span>${isNext?'<span class="tag">次はこの人</span>':''}</div>
+    <div class="gen">${g!=null?esc(g)+'世代':'<span class="what">世代数未記入</span>'}</div>
     <div class="meta">${meta.map(m=>`<span>${esc(m)}</span>`).join('')}</div>
     ${o.note?`<div class="memo">${esc(o.note)}</div>`:''}
     ${acts?`<div class="acts">${acts}</div>`:''}
   </article>`;
 }
 
+function regulars(){
+  const m=new Map();
+  for(const o of orders){
+    const k=norm(o.client);if(!k)continue;
+    const r=m.get(k)||{name:o.client,list:[]};r.list.push(o);m.set(k,r);
+  }
+  nth=new Map();
+  const rows=[];
+  for(const r of m.values()){
+    r.list.sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    r.list.forEach((o,i)=>nth.set(o.id,i+1));
+    const last=r.list[r.list.length-1];
+    rows.push({name:last.client,count:r.list.length,done:r.list.filter(o=>o.status==='done').length,
+      gens:r.list.reduce((s,o)=>s+(gensOf(o)||0),0),last:last.createdAt||0,key:norm(last.client)});
+  }
+  rows.sort((a,b)=>b.count-a.count||b.last-a.last);
+  return rows;
+}
+
 function render(){
+  const R=regulars();
+  $('clientList').innerHTML=R.map(r=>`<option value="${esc(r.name)}"></option>`).join('');
+  const rl=q?R.filter(r=>r.key.includes(q)):R;
+  $('cR').textContent=R.length+'人';
+  $('lR').innerHTML=rl.length?rl.slice(0,regShown).map(r=>`<tr><td>${esc(r.name)}</td><td class="n big">${r.count}回</td><td class="n">${r.done}回</td><td class="n">${r.gens}世代</td><td>${esc(d2(r.last))}</td></tr>`).join(''):`<tr><td colspan="5" class="empty">${loaded?(q?'該当なし':'まだ依頼はありません'):'読み込み中…'}</td></tr>`;
+  $('moreR').classList.toggle('hide',rl.length<=regShown);
   const by=s=>orders.filter(o=>o.status===s);
   const W=by('wait').sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
   const K=by('work').sort((a,b)=>(a.startedAt||0)-(b.startedAt||0));
@@ -198,22 +228,32 @@ function render(){
   $('moreD').classList.toggle('hide',dl.length<=doneShown);
 }
 
-$('q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render()});
+$('q').addEventListener('input',e=>{q=norm(e.target.value);render()});
+$('moreR').addEventListener('click',()=>{regShown+=20;render()});
 $('moreD').addEventListener('click',()=>{doneShown+=20;render()});
 
 // ログイン
+let signingIn=false;
 $('loginBtn').addEventListener('click',async()=>{
+  if(signingIn)return;
+  signingIn=true;$('loginBtn').disabled=true;msg('');
   try{await signInWithPopup(auth,new GoogleAuthProvider())}
-  catch(e){if(e?.code!=='auth/popup-closed-by-user')msg('ログインできませんでした（'+(e?.code||'不明なエラー')+'）')}
+  catch(e){
+    const c=e?.code||'';
+    if(c==='auth/popup-blocked')msg('ポップアップがブロックされました。このサイトのポップアップを許可して、もう一度押してください。');
+    else if(c==='auth/unauthorized-domain')msg('このドメインがFirebaseに登録されていません（Authentication → 設定 → 承認済みドメイン）。');
+    else msg('ログインできませんでした（'+(c||e?.message||'不明')+'）');
+  }
+  signingIn=false;$('loginBtn').disabled=false;
 });
 $('logoutBtn').addEventListener('click',()=>signOut(auth));
 onAuthStateChanged(auth,u=>{
-  canWrite=!!(u&&"ECrbmFsNhwXAvP2uQurmpOtJJlj1".includes(u.uid));
+  canWrite=!!(u&&OWNER_UIDS.includes(u.uid));
   $('loginBtn').classList.toggle('hide',!!u);
   $('logoutBtn').classList.toggle('hide',!u);
   $('who').textContent=u?(canWrite?'店主モード':'閲覧のみ（店主ではありません）'):'';
   $('addBtn').classList.toggle('hide',!canWrite);
-  $('roleNote').textContent=canWrite?'「着手する」「納品した」で札が隣の棚へ移ります。':'順番と進み具合は自動で更新されます。';
+  $('roleNote').textContent=canWrite?'「着手する」「納品した」で札が隣の棚へ移ります。':'順番は自動で更新されます。';
   render();
 });
 
@@ -222,16 +262,26 @@ const dlg=$('dlg');
 function openForm(o){
   editId=o?o.id:null;
   $('fTitle').textContent=o?'依頼を編集':'依頼を受け付ける';
-  $('fClient').value=o?.client||'';$('fHomu').value=o?.homu||'';
-  $('fFrom').value=o?.fromGen??'';$('fTo').value=o?.toGen??'';$('fCur').value=o?.curGen??'';$('fNote').value=o?.note||'';
+  $('fClient').value=o?.client||'';$('fGens').value=gensOf(o||{})??'';$('fNote').value=o?.note||'';
+  showRepeat();
   dlg.showModal();$('fClient').focus();
 }
 $('addBtn').addEventListener('click',()=>openForm(null));
+function showRepeat(){
+  const k=norm($('fClient').value),el=$('fRepeat');el.textContent='';
+  if(!k)return;
+  const c=orders.filter(o=>norm(o.client)===k&&o.id!==editId).length;
+  if(editId){el.textContent=`この人の依頼は全部で ${c+1} 回です`;return}
+  if(c===0){el.textContent='初めての依頼者です';return}
+  const bb=document.createElement('b');bb.textContent=`${c+1}回目`;
+  el.append('この人は ',bb,`の依頼です（これまで ${c} 回）`);
+}
+$('fClient').addEventListener('input',showRepeat);
 $('fCancel').addEventListener('click',()=>dlg.close());
 $('f').addEventListener('submit',async e=>{
   e.preventDefault();
   const client=$('fClient').value.trim();if(!client){$('fClient').focus();return}
-  const body={client,homu:$('fHomu').value.trim(),fromGen:num($('fFrom').value),toGen:num($('fTo').value),curGen:num($('fCur').value),note:$('fNote').value.trim()};
+  const body={client,gens:num($('fGens').value),note:$('fNote').value.trim()};
   $('fSave').disabled=true;
   try{
     if(editId)await updateDoc(doc(fs,'orders',editId),body);
@@ -255,7 +305,7 @@ document.querySelector('.board').addEventListener('click',async e=>{
   if(a==='edit')return openForm(o);
   if(a==='del'){pendingDel=id;$('cText').textContent=`「${o.client}」の依頼を削除しますか？元に戻せません。`;$('cdlg').showModal();return}
   const now=Date.now();
-  const patch={start:{status:'work',startedAt:now,curGen:o.curGen??o.fromGen??null},done:{status:'done',doneAt:now,curGen:o.toGen??o.curGen??null},back:{status:'wait',startedAt:null},reopen:{status:'work',doneAt:null}}[a];
+  const patch={start:{status:'work',startedAt:now},done:{status:'done',doneAt:now},back:{status:'wait',startedAt:null},reopen:{status:'work',doneAt:null}}[a];
   if(!patch)return;
   b.disabled=true;
   try{await updateDoc(doc(fs,'orders',id),patch)}catch(err){msg('更新できませんでした。店主アカウントでログインしているか確認してください。')}
