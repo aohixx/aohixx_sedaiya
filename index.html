@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>世代屋さん 受注ボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: 店番の帳場。てきぱき、親しみやすく、迷わない
+IDEA: 錬金工房の受付札。札が「待ち→作業中→納品済み」の棚を移っていく
+PICTURE: 三つの棚（列）そのもの。待ち札には大きな順番号、作業中には世代メーター
+COLOUR and TYPE: 深い翡翠の帯＋白い棚、差し色はマゼンタ。Zen Maru Gothic＋Noto Sans JP
+LAYOUT: 細い帯に店名と集計、その下に検索と追加、三列の棚。600px未満は縦積み
+*/
+:root{color-scheme:light dark;
+--bg:light-dark(#eef4f1,#0b1a17);--panel:light-dark(#ffffff,#122824);--ink:light-dark(#0f2420,#e4f1ec);
+--sub:light-dark(#4d6862,#9ab8b0);--line:light-dark(#d3e2dc,#24423c);--jade:#0f5a4c;--jade2:light-dark(#d9efe7,#173a33);
+--acc:#d6336c;--acc2:light-dark(#fde6ee,#3a1424);--work:light-dark(#fff4d6,#33290f);--workink:light-dark(#8a5a00,#f2c55a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans JP",system-ui,sans-serif;overflow-x:clip}
+h1,h2,.num,.gen{font-family:"Zen Maru Gothic","Noto Sans JP",sans-serif}
+.top{background:var(--jade);color:#fff;padding:22px max(5vw,16px) 20px}
+.top .in{max-width:1240px;margin:auto;display:flex;flex-wrap:wrap;gap:12px 32px;align-items:end;justify-content:space-between}
+h1{margin:0;font-size:clamp(28px,4.4vw,44px);line-height:1.05;font-weight:900;text-wrap:balance}
+.top p{margin:6px 0 0;opacity:.85;font-size:14px}
+.right{display:flex;flex-direction:column;gap:10px;align-items:flex-end}.auth{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap;justify-content:flex-end}button.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.5);min-height:36px;font-size:14px}
+@media(max-width:600px){.right{align-items:flex-start}.auth{justify-content:flex-start}}
+.stats{display:flex;gap:22px;flex-wrap:wrap}
+.stats div{font-size:13px;opacity:.9}.stats b{display:block;font:900 30px/1 "Zen Maru Gothic",sans-serif}
+main{max-width:1240px;margin:auto;padding:20px max(5vw,16px) 48px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+input,select,textarea,button{font:inherit;font-size:16px}
+input,select,textarea{background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+#q{flex:1 1 220px}
+button{min-height:44px;border-radius:10px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);padding:0 14px;cursor:pointer;font-weight:700}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.sm{min-height:36px;padding:0 10px;font-size:14px}
+.note{font-size:13px;color:var(--sub);margin:0 0 14px}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.col{background:var(--jade2);border-radius:16px;padding:12px}
+.col h2{margin:2px 4px 10px;font-size:20px;display:flex;justify-content:space-between;align-items:baseline}
+.col h2 span{font-size:14px;color:var(--sub);font-family:"Noto Sans JP"}
+.card{background:var(--panel);border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:0 1px 0 var(--line),0 4px 12px -8px rgba(0,0,0,.35);display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 12px}
+.card.next{outline:2.5px solid var(--acc)}
+.num{grid-row:span 3;font-size:34px;font-weight:900;line-height:1;color:var(--jade);min-width:1.6em;text-align:center;padding-top:2px}
+:root[data-theme=dark] .num{color:#6fd3bd}@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .num{color:#6fd3bd}}
+.who{font-weight:700;font-size:17px;overflow-wrap:anywhere}
+.what{font-size:14px;color:var(--sub);overflow-wrap:anywhere}
+.gen{font-weight:700;white-space:nowrap}
+.tag{display:inline-block;font-size:12px;font-weight:700;background:var(--acc);color:#fff;border-radius:99px;padding:1px 9px;margin-left:6px;vertical-align:2px}
+.meter{grid-column:1/-1;height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;background:var(--workink);border-radius:99px;transition:width .4s}
+.meta{grid-column:1/-1;font-size:13px;color:var(--sub);display:flex;flex-wrap:wrap;gap:2px 12px}
+.memo{grid-column:1/-1;font-size:14px;background:var(--bg);border-radius:8px;padding:6px 9px;overflow-wrap:anywhere;white-space:pre-wrap}
+.acts{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.col.work .card{background:var(--work)}
+.empty{font-size:14px;color:var(--sub);padding:18px 8px;text-align:center}
+.more{width:100%}
+.status{margin:0 0 14px;padding:10px 14px;border-radius:10px;background:var(--acc2);font-size:14px}
+.status:empty{display:none}
+dialog{border:0;border-radius:16px;padding:0;background:var(--panel);color:var(--ink);width:min(520px,94vw)}
+dialog::backdrop{background:rgba(5,20,17,.55)}
+dialog form{padding:20px;display:grid;gap:12px}
+dialog h2{margin:0;font-size:22px}
+label{display:grid;gap:4px;font-size:14px;font-weight:700}
+.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.dact{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.hide{display:none!important}
+@media(max-width:900px){.board{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.meter i{transition:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <div><h1>世代屋さん 受注ボード</h1><p>受付順に上から作業します。自分の名前で検索すると順番が分かります。</p></div>
+  <div class="right"><div class="stats"><div><b id="sW">–</b>受付待ち</div><div><b id="sK">–</b>作業中</div><div><b id="sD">–</b>納品済み</div></div><div class="auth"><span id="who"></span><button id="loginBtn" class="ghost">店主ログイン</button><button id="logoutBtn" class="ghost hide">ログアウト</button></div></div>
+</div></header>
+<main>
+  <div class="bar">
+    <input id="q" type="search" placeholder="依頼者名・ホムンクルス名で検索" aria-label="検索">
+    <button id="addBtn" class="pri hide">＋ 依頼を受け付ける</button>
+  </div>
+  <p class="status" id="msg"></p>
+  <p class="note" id="roleNote"></p>
+  <div class="board">
+    <section class="col wait"><h2>受付待ち <span id="cW"></span></h2><div id="lW"></div></section>
+    <section class="col work"><h2>作業中 <span id="cK"></span></h2><div id="lK"></div></section>
+    <section class="col done"><h2>納品済み <span id="cD"></span></h2><div id="lD"></div><button class="more hide" id="moreD">もっと見る</button></section>
+  </div>
+</main>
+
+<dialog id="dlg"><form id="f" method="dialog">
+  <h2 id="fTitle">依頼を受け付ける</h2>
+  <label>依頼者名<input id="fClient" required maxlength="40" autocomplete="off"></label>
+  <label>対象ホムンクルス<input id="fHomu" maxlength="60" autocomplete="off" placeholder="例：エンバーハスク（つんつん）"></label>
+  <div class="row">
+    <label>開始世代<input id="fFrom" type="number" min="0" max="9999" inputmode="numeric"></label>
+    <label>目標世代<input id="fTo" type="number" min="0" max="9999" inputmode="numeric"></label>
+    <label>現在世代<input id="fCur" type="number" min="0" max="9999" inputmode="numeric"></label>
+  </div>
+  <label>メモ（報酬・素材・連絡など）<textarea id="fNote" rows="3" maxlength="400"></textarea></label>
+  <div class="dact"><button type="button" id="fCancel">やめる</button><button class="pri" id="fSave" type="submit">保存</button></div>
+</form></dialog>
+
+<dialog id="cdlg"><form method="dialog" style="padding:20px;display:grid;gap:14px">
+  <h2 id="cText" style="font-size:18px">この依頼を削除しますか？</h2>
+  <div class="dact"><button value="no">やめる</button><button value="yes" class="pri">削除する</button></div>
+</form></dialog>
+
+<script type="module">
+// ===== ここだけ自分の値に書き換える =====
+// Firebaseコンソール → プロジェクトの設定 → マイアプリ でコピーした firebaseConfig を丸ごと貼る
+const firebaseConfig = {
+  apiKey: "ここに貼る",
+  authDomain: "ここに貼る",
+  projectId: "ここに貼る",
+  storageBucket: "ここに貼る",
+  messagingSenderId: "ここに貼る",
+  appId: "ここに貼る"
+};
+// 店主（編集できる人）のGoogleアカウントのメールアドレス。firestore.rules と同じものを書く
+const OWNER_EMAILS = ["aoyamahitaku0715@icloud.com"];
+// =====================================
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+const $=id=>document.getElementById(id);
+let orders=[],q='',doneShown=20,editId=null,loaded=false,canWrite=false;
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const d2=t=>{if(!t)return'';const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+const num=v=>{const n=parseInt(v,10);return Number.isFinite(n)?n:null};
+const msg=t=>{$('msg').textContent=t||''};
+
+const app=initializeApp(firebaseConfig);
+const fs=getFirestore(app);
+const auth=getAuth(app);
+const col=collection(fs,'orders');
+
+function genText(o){
+  const f=num(o.fromGen),t=num(o.toGen);
+  if(f!=null&&t!=null)return `${f}世代 → ${t}世代`;
+  if(t!=null)return `目標 ${t}世代`;
+  return '';
+}
+function pct(o){
+  const f=num(o.fromGen),t=num(o.toGen),c=num(o.curGen);
+  if(f==null||t==null||c==null||t<=f)return null;
+  return Math.max(0,Math.min(100,Math.round((c-f)/(t-f)*100)));
+}
+const match=o=>((o.client||'')+' '+(o.homu||'')).toLowerCase().includes(q);
+
+function card(o,i,list){
+  const hit=q&&match(o);
+  const p=pct(o),g=genText(o);
+  const isNext=list==='wait'&&i===0;
+  let acts='';
+  if(canWrite){
+    if(o.status==='wait')acts+=`<button class="sm pri" data-a="start" data-id="${esc(o.id)}">着手する</button>`;
+    if(o.status==='work')acts+=`<button class="sm pri" data-a="done" data-id="${esc(o.id)}">納品した</button><button class="sm" data-a="back" data-id="${esc(o.id)}">待ちに戻す</button>`;
+    if(o.status==='done')acts+=`<button class="sm" data-a="reopen" data-id="${esc(o.id)}">作業中に戻す</button>`;
+    acts+=`<button class="sm" data-a="edit" data-id="${esc(o.id)}">編集</button><button class="sm" data-a="del" data-id="${esc(o.id)}">削除</button>`;
+  }
+  const meta=[`受付 ${d2(o.createdAt)}`];
+  if(o.startedAt)meta.push(`着手 ${d2(o.startedAt)}`);
+  if(o.doneAt)meta.push(`納品 ${d2(o.doneAt)}`);
+  return `<article class="card${isNext?' next':''}"${hit?' style="outline:2.5px solid var(--jade)"':''}>
+    <div class="num">${list==='wait'?i+1:list==='work'?'⚗':'✓'}</div>
+    <div class="who">${esc(o.client)}${isNext?'<span class="tag">次はこの人</span>':''}</div>
+    <div class="what">${esc(o.homu||'（ホムンクルス未記入）')}</div>
+    <div class="gen">${esc(g)}${p!=null&&o.status==='work'?` <span class="what">現在 ${esc(num(o.curGen))}世代・${p}%</span>`:''}</div>
+    ${p!=null&&o.status==='work'?`<div class="meter"><i style="width:${p}%"></i></div>`:''}
+    <div class="meta">${meta.map(m=>`<span>${esc(m)}</span>`).join('')}</div>
+    ${o.note?`<div class="memo">${esc(o.note)}</div>`:''}
+    ${acts?`<div class="acts">${acts}</div>`:''}
+  </article>`;
+}
+
+function render(){
+  const by=s=>orders.filter(o=>o.status===s);
+  const W=by('wait').sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  const K=by('work').sort((a,b)=>(a.startedAt||0)-(b.startedAt||0));
+  const D=by('done').sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
+  const f=l=>q?l.filter(match):l;
+  $('sW').textContent=W.length;$('sK').textContent=K.length;$('sD').textContent=D.length;
+  $('cW').textContent=W.length+'件';$('cK').textContent=K.length+'件';$('cD').textContent=D.length+'件';
+  const empty=t=>`<div class="empty">${loaded?(q?'該当なし':t):'読み込み中…'}</div>`;
+  const wl=W.map((o,i)=>({o,i})).filter(x=>!q||match(x.o)); // 検索中も本来の順番番号を保つ
+  $('lW').innerHTML=wl.length?wl.map(x=>card(x.o,x.i,'wait')).join(''):empty('待っている依頼はありません');
+  const kl=f(K);$('lK').innerHTML=kl.length?kl.map((o,i)=>card(o,i,'work')).join(''):empty('作業中の依頼はありません');
+  const dl=f(D);$('lD').innerHTML=dl.length?dl.slice(0,doneShown).map((o,i)=>card(o,i,'done')).join(''):empty('まだ納品はありません');
+  $('moreD').classList.toggle('hide',dl.length<=doneShown);
+}
+
+$('q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render()});
+$('moreD').addEventListener('click',()=>{doneShown+=20;render()});
+
+// ログイン
+$('loginBtn').addEventListener('click',async()=>{
+  try{await signInWithPopup(auth,new GoogleAuthProvider())}
+  catch(e){if(e?.code!=='auth/popup-closed-by-user')msg('ログインできませんでした（'+(e?.code||'不明なエラー')+'）')}
+});
+$('logoutBtn').addEventListener('click',()=>signOut(auth));
+onAuthStateChanged(auth,u=>{
+  canWrite=!!(u&&OWNER_UIDS.includes(u.uid));
+  $('loginBtn').classList.toggle('hide',!!u);
+  $('logoutBtn').classList.toggle('hide',!u);
+  $('who').textContent=u?(canWrite?'店主モード':'閲覧のみ（店主ではありません）'):'';
+  $('addBtn').classList.toggle('hide',!canWrite);
+  $('roleNote').textContent=canWrite?'「着手する」「納品した」で札が隣の棚へ移ります。':'順番と進み具合は自動で更新されます。';
+  render();
+});
+
+// 追加・編集フォーム
+const dlg=$('dlg');
+function openForm(o){
+  editId=o?o.id:null;
+  $('fTitle').textContent=o?'依頼を編集':'依頼を受け付ける';
+  $('fClient').value=o?.client||'';$('fHomu').value=o?.homu||'';
+  $('fFrom').value=o?.fromGen??'';$('fTo').value=o?.toGen??'';$('fCur').value=o?.curGen??'';$('fNote').value=o?.note||'';
+  dlg.showModal();$('fClient').focus();
+}
+$('addBtn').addEventListener('click',()=>openForm(null));
+$('fCancel').addEventListener('click',()=>dlg.close());
+$('f').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const client=$('fClient').value.trim();if(!client){$('fClient').focus();return}
+  const body={client,homu:$('fHomu').value.trim(),fromGen:num($('fFrom').value),toGen:num($('fTo').value),curGen:num($('fCur').value),note:$('fNote').value.trim()};
+  $('fSave').disabled=true;
+  try{
+    if(editId)await updateDoc(doc(fs,'orders',editId),body);
+    else await addDoc(col,{...body,status:'wait',createdAt:Date.now(),startedAt:null,doneAt:null});
+    dlg.close();msg('');
+  }catch(err){msg('保存できませんでした。店主アカウントでログインしているか確認してください。')}
+  $('fSave').disabled=false;
+});
+
+// 削除確認
+let pendingDel=null;
+$('cdlg').addEventListener('close',async()=>{
+  if($('cdlg').returnValue==='yes'&&pendingDel){try{await deleteDoc(doc(fs,'orders',pendingDel))}catch(e){msg('削除できませんでした。')}}
+  pendingDel=null;
+});
+
+// 札のボタン
+document.querySelector('.board').addEventListener('click',async e=>{
+  const b=e.target.closest('button[data-a]');if(!b)return;
+  const id=b.dataset.id,a=b.dataset.a,o=orders.find(x=>x.id===id);if(!o)return;
+  if(a==='edit')return openForm(o);
+  if(a==='del'){pendingDel=id;$('cText').textContent=`「${o.client}」の依頼を削除しますか？元に戻せません。`;$('cdlg').showModal();return}
+  const now=Date.now();
+  const patch={start:{status:'work',startedAt:now,curGen:o.curGen??o.fromGen??null},done:{status:'done',doneAt:now,curGen:o.toGen??o.curGen??null},back:{status:'wait',startedAt:null},reopen:{status:'work',doneAt:null}}[a];
+  if(!patch)return;
+  b.disabled=true;
+  try{await updateDoc(doc(fs,'orders',id),patch)}catch(err){msg('更新できませんでした。店主アカウントでログインしているか確認してください。')}
+  b.disabled=false;
+});
+
+// データ購読（全員リアルタイム）
+render();
+const timer=setTimeout(()=>{if(!loaded)msg('データに接続できません。少し待ってから開き直してください。')},10000);
+onSnapshot(col,s=>{
+  clearTimeout(timer);loaded=true;
+  orders=s.docs.map(d=>({id:d.id,...d.data()}));
+  if($('msg').textContent.startsWith('データに接続'))msg('');
+  render();
+},err=>{clearTimeout(timer);loaded=true;msg('データを読み込めませんでした（'+(err?.code||'')+'）。firebaseConfig と Firestore のルールを確認してください。');render()});
+</script>
+</body>
+</html>
