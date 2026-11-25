@@ -208,7 +208,7 @@ $('loginBtn').addEventListener('click',async()=>{
 });
 $('logoutBtn').addEventListener('click',()=>signOut(auth));
 onAuthStateChanged(auth,u=>{
-  canWrite=!!(u&&OWNER_UIDS.includes(u.uid));
+  canWrite=!!(u&&ECrbmFsNhwXAvP2uQurmpOtJJlj1.includes(u.uid));
   $('loginBtn').classList.toggle('hide',!!u);
   $('logoutBtn').classList.toggle('hide',!u);
   $('who').textContent=u?(canWrite?'店主モード':'閲覧のみ（店主ではありません）'):'';
