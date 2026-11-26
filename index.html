@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>世代屋さん 受注ボード</title>
+<link rel="icon" href="thumb.webp" type="image/webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -28,6 +29,9 @@ h1{margin:0;font-size:clamp(28px,4.4vw,44px);line-height:1.05;font-weight:900;te
 .top p{margin:6px 0 0;opacity:.85;font-size:14px}
 .right{display:flex;flex-direction:column;gap:10px;align-items:flex-end}.auth{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap;justify-content:flex-end}button.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.5);min-height:36px;font-size:14px}
 @media(max-width:600px){.right{align-items:flex-start}.auth{justify-content:flex-start}}
+.brand{display:flex;align-items:center;gap:clamp(10px,2vw,22px)}
+.mascot{width:clamp(84px,11vw,140px);height:auto;margin:-6px 0 -26px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));flex:none}
+@media(max-width:600px){.mascot{width:72px;margin:-6px 0 -10px}}
 .stats{display:flex;gap:22px;flex-wrap:wrap}
 .stats div{font-size:13px;opacity:.9}.stats b{display:block;font:900 30px/1 "Zen Maru Gothic",sans-serif}
 main{max-width:1240px;margin:auto;padding:20px max(5vw,16px) 48px}
@@ -86,7 +90,7 @@ td.big{font:900 20px/1 "Zen Maru Gothic",sans-serif;color:var(--acc)}
 </head>
 <body>
 <header class="top"><div class="in">
-  <div><h1>世代屋さん 受注ボード</h1><p>受付順に上から作業します。自分の名前で検索すると、順番と依頼回数が分かります。</p></div>
+  <div class="brand"><img class="mascot" src="main.webp" alt="" width="794" height="800"><div><h1>世代屋さん 受注ボード</h1><p>受付順に上から作業します。自分の名前で検索すると、順番と依頼回数が分かります。</p></div></div>
   <div class="right"><div class="stats"><div><b id="sW">–</b>受付待ち</div><div><b id="sK">–</b>作業中</div><div><b id="sD">–</b>納品済み</div></div><div class="auth"><span id="who"></span><button id="loginBtn" class="ghost">店主ログイン</button><button id="logoutBtn" class="ghost hide">ログアウト</button></div></div>
 </div></header>
 <main>
@@ -135,8 +139,7 @@ const firebaseConfig = {
   appId: "1:542610511127:web:5accc621ddf9ce004b5352"
 };
 // 店主のUID（Authentication → ユーザー タブ）。必ず " " で囲む。firestore.rules と同じものを書く
-const OWNER_UIDS = ["ECrbmFsNhwXAvP2uQurmpOtJJlj1"];
-// =====================================
+const OWNER_UIDS = ["ECrbmFsNhwXAvP2uQurmpOtJJlj1"];// =====================================
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
