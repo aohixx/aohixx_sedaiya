@@ -117,7 +117,7 @@ td.big{font:900 20px/1 "Zen Maru Gothic",sans-serif;color:var(--acc)}
   <h2 id="fTitle">依頼を受け付ける</h2>
   <label>依頼者名<input id="fClient" required maxlength="40" autocomplete="off" list="clientList" placeholder="ゲーム内の名前"><datalist id="clientList"></datalist></label>
   <p class="hint" id="fRepeat"></p>
-  <label>何世代ほしいか<input id="fGens" type="number" min="1" max="9999" inputmode="numeric" placeholder="例：5"></label>
+  <label>何世代ほしいか<input id="fGens" type="number" min="1" max="100000" inputmode="numeric" placeholder="例：5"></label>
   <label>メモ（報酬・素材・連絡など）<textarea id="fNote" rows="3" maxlength="400"></textarea></label>
   <div class="dact"><button type="button" id="fCancel">やめる</button><button class="pri" id="fSave" type="submit">保存</button></div>
 </form></dialog>
